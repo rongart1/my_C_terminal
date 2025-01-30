@@ -202,62 +202,88 @@ void systemCall(char **arguments)
         }
     }
 }
-void myPipe(char **argv1, char **argv2)
+void myPipe(char **argv1, char **argv2, char **argv3)
 {
+    int fd1[2], fd2[2];
 
-    int fd[2];
-
-     if (pipe(fd) == -1)
-    {
-        perror("pipe failed");
+    if (pipe(fd1) == -1) {
+        perror("pipe1 failed");
         exit(1);
+    }
+
+    if (argv3 != NULL) {  // create second pipe if argv3 isnt null
+        if (pipe(fd2) == -1) {
+            perror("pipe2 failed");
+            exit(1);
+        }
     }
 
     pid_t pid1 = fork();
-
-    if (pid1 < 0)
-    {
-        perror("fork failed");
+    if (pid1 < 0) {
+        perror("fork1 failed");
         exit(1);
     }
-
-    if (pid1 == 0)
-    {
-        close(fd[0]);
-        dup2(fd[1], STDOUT_FILENO);
-        close(fd[1]);
+    if (pid1 == 0) {
+        close(fd1[0]);  //close fd1 read
+        dup2(fd1[1], STDOUT_FILENO);  //redirect output to fd1[1]
+        close(fd1[1]);  //close original write
 
         execvp(argv1[0], argv1);
-        perror("execvp failed");
+        perror("execvp1 failed");
         exit(1);
     }
 
     pid_t pid2 = fork();
-
-    if (pid2 < 0)
-    {
-        perror("fork failed");
+    if (pid2 < 0) {
+        perror("fork2 failed");
         exit(1);
     }
+    if (pid2 == 0) {
+        close(fd1[1]);  //close write of fd1
+        dup2(fd1[0], STDIN_FILENO);  //read from fd1 [0]
+        close(fd1[0]);  // close the original read
 
-    if (pid2 == 0)
-    {
-        close(fd[1]);
-        dup2(fd[0], STDIN_FILENO);
-        close(fd[0]);
+        if (argv3 != NULL) { // if i have second pipe
+            close(fd2[0]);  // close fd2[0]
+            dup2(fd2[1], STDOUT_FILENO);  //redirect the output to fd2[1]
+            close(fd2[1]);  //close original write
+        }
 
         execvp(argv2[0], argv2);
-        perror("execvp failed");
+        perror("execvp2 failed");
         exit(1);
     }
 
-    close(fd[0]);
-    close(fd[1]);
+    //done with first pipe
+    close(fd1[0]);
+    close(fd1[1]);
 
+    if (argv3 != NULL) { // if second pipe
+        pid_t pid3 = fork();
+        if (pid3 < 0) {
+            perror("fork3 failed");
+            exit(1);
+        }
+        if (pid3 == 0) {
+            close(fd2[1]);  //close write of the pipe
+            dup2(fd2[0], STDIN_FILENO);  //read from the pipe
+            close(fd2[0]);  // close original read
+
+            execvp(argv3[0], argv3);
+            perror("execvp3 failed");
+            exit(1);
+        }
+        //close the second pipe
+        close(fd2[0]);
+        close(fd2[1]);
+    }
+
+    
     wait(NULL);
     wait(NULL);
-
-   
+    if (argv3 != NULL) {
+        wait(NULL);
+    }
 }
 
 int getPipe(char **arguments){
@@ -311,7 +337,50 @@ void move(char **arguments){
     if(status !=0 ){
         perror("coulndt move file");
     };
-    
+}
+
+void echoFile(char **arguments) {
+    int size = 0;
+
+    while (arguments[size] != NULL) {
+        size++;
+    }
+    if(size <= 1){
+        perror("too less arguments");
+        return;
+    }
+
+    if (size == 2) {
+        puts(arguments[1]);
+        return;
+    }
 
 
+    if (size != 4) {
+        perror("Incorrect number of arguments echoppend needs to be used like <string> >or>> <destination to append/write to>");
+        return;
+    }
+
+    FILE *destFile;
+    char *input = arguments[1];
+
+    if(strcmp(arguments[2],">") == 0){
+        destFile = fopen(arguments[3], "w");
+    }
+    else if (strcmp(arguments[2],">>") == 0){
+        destFile = fopen(arguments[3], "a");
+    }
+    else{
+        perror("expected > or >> after string but didnt get it");
+        return;
+    }
+
+    if (destFile == NULL) {
+        perror("Error opening file");
+        return;
+    }
+
+    fprintf(destFile, "%s", input);
+
+    fclose(destFile);
 }

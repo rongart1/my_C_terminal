@@ -10,14 +10,21 @@ int main(int argc, char const *argv[])
     wellcome();
     while (1)
     {
-        int isPipe = 0;
+        int isPipe1 = 0;
+        int isPipe2 = 0;
         getLocation();
 
         char *input = inputFromUser();
 
         char **arguments = splitArguments(input);
 
-        isPipe = getPipe(arguments);
+        isPipe1 = getPipe(arguments);
+
+        if(isPipe1)
+            isPipe2 = getPipe(arguments+isPipe1+1) + isPipe1+1;
+
+        printf("pipe 2 : %d",isPipe2);
+
 
         // printf("pipe %d",isPipe);
 
@@ -45,9 +52,16 @@ int main(int argc, char const *argv[])
         {
             move(arguments);
         }
-        else if (isPipe)
+        else if (strcmp(input, "echo") == 0)
         {
-            myPipe(arguments,arguments+isPipe+1);
+            echoFile(arguments);
+        }
+        else if (isPipe1)
+        {
+            if(!isPipe2)
+                myPipe(arguments,arguments+isPipe1+1,NULL);
+            else
+                myPipe(arguments,arguments+isPipe1+1,arguments+isPipe2+1);
         }
         else
         {
