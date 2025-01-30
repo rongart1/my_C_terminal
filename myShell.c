@@ -15,9 +15,11 @@ int main(int argc, char const *argv[])
 
         char *input = inputFromUser();
 
-        // puts(input);
-       
         char **arguments = splitArguments(input);
+
+        isPipe = getPipe(arguments);
+
+        // printf("pipe %d",isPipe);
 
         if (strcmp(input, "exit") == 0)
         {
@@ -33,11 +35,15 @@ int main(int argc, char const *argv[])
         }
         else if (strcmp(input, "delete") == 0)
         {
-            puts("Impl");
+            del(arguments);
         }
         else if (strcmp(input, "dir") == 0)
         {
             puts("Impl");
+        }
+        else if (strcmp(input, "move") == 0)
+        {
+            move(arguments);
         }
         else if (isPipe)
         {

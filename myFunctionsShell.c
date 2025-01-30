@@ -207,25 +207,111 @@ void myPipe(char **argv1, char **argv2)
 
     int fd[2];
 
-    if (fork() == 0)
+     if (pipe(fd) == -1)
     {
-        pipe(fd);
-        if (fork() == 0)
-        {
-
-            close(STDOUT_FILENO);
-            dup2(fd[1], STDOUT_FILENO);
-            close(fd[1]);
-            close(fd[0]);
-            execvp(argv1[0], argv1);
-        }
-
-        close(STDIN_FILENO);
-        dup(fd[0]);
-        close(fd[1]);
-        close(fd[0]);
-        execvp(argv2[0], argv2);
-        
+        perror("pipe failed");
+        exit(1);
     }
+
+    pid_t pid1 = fork();
+
+    if (pid1 < 0)
+    {
+        perror("fork failed");
+        exit(1);
+    }
+
+    if (pid1 == 0)
+    {
+        close(fd[0]);
+        dup2(fd[1], STDOUT_FILENO);
+        close(fd[1]);
+
+        execvp(argv1[0], argv1);
+        perror("execvp failed");
+        exit(1);
+    }
+
+    pid_t pid2 = fork();
+
+    if (pid2 < 0)
+    {
+        perror("fork failed");
+        exit(1);
+    }
+
+    if (pid2 == 0)
+    {
+        close(fd[1]);
+        dup2(fd[0], STDIN_FILENO);
+        close(fd[0]);
+
+        execvp(argv2[0], argv2);
+        perror("execvp failed");
+        exit(1);
+    }
+
+    close(fd[0]);
+    close(fd[1]);
+
+    wait(NULL);
+    wait(NULL);
+
+   
 }
 
+int getPipe(char **arguments){
+    int i = 0;
+    while(arguments[i]  != NULL){
+        if(arguments[i][0] == '|'){
+            arguments[i] = NULL;
+            return i;
+        }
+        i = i+1;
+    }
+    return 0;
+}
+
+
+void del(char **arguments)
+{
+    int size = 0;
+    while (arguments[size] != NULL) {
+        size++;
+    }
+
+    if(size <2){
+        perror("delete needs a path");
+    }
+    else if(size > 2){
+        perror("too many arguments");
+    }
+
+    if (remove(arguments[1]) == 0) {
+        printf("File deleted successfully.\n");
+
+    } else {
+        printf("Error: Unable to delete the file.\n");
+    }
+
+}
+
+void move(char **arguments){
+    int size = 0;
+    while (arguments[size] != NULL) {
+        size++;
+    }
+
+    if(size != 3){
+        perror("move needs a file source path and destination path");
+    }
+
+    int status = rename(arguments[1], arguments[2]);
+
+    if(status !=0 ){
+        perror("coulndt move file");
+    };
+    
+
+
+}
