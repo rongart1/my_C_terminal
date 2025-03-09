@@ -204,6 +204,7 @@ void systemCall(char **arguments)
 }
 void myPipe(char **argv1, char **argv2, char **argv3)
 {
+
     int fd1[2], fd2[2];
 
     if (pipe(fd1) == -1) {

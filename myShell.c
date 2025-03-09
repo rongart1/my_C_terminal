@@ -21,12 +21,13 @@ int main(int argc, char const *argv[])
         isPipe1 = getPipe(arguments);
 
         if(isPipe1)
-            isPipe2 = getPipe(arguments+isPipe1+1) + isPipe1+1;
+            isPipe2 = getPipe(arguments+isPipe1+1);
 
-        printf("pipe 2 : %d",isPipe2);
+        if(isPipe2)
+            isPipe2 = isPipe2 + isPipe1+1;
 
 
-        // printf("pipe %d",isPipe);
+
 
         if (strcmp(input, "exit") == 0)
         {
